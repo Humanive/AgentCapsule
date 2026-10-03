@@ -1,0 +1,31 @@
+{
+  "name": "agentcapsule",
+  "version": "0.1.0",
+  "description": "Define an agent once as a Role plus bundled Skills, and launch it on Claude Code or Pi.",
+  "type": "module",
+  "bin": {
+    "agentcapsule": "dist/main.js"
+  },
+  "files": [
+    "dist",
+    "capsules"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  },
+  "packageManager": "pnpm@12.6.0"
+}
