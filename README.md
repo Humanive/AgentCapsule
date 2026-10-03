@@ -13,17 +13,17 @@ capsules/researcher/
 ## Usage
 
 ```bash
-npx agentcapsule list
-npx agentcapsule inspect researcher
+npx github:Humanive/AgentCapsule list
+npx github:Humanive/AgentCapsule inspect researcher
 
 # researcher is the main agent; your project's CLAUDE.md still applies
-npx agentcapsule launch researcher --runtime claude
+npx github:Humanive/AgentCapsule launch researcher --runtime claude
 
 # your normal agent stays main and can delegate to researcher and reviewer
-npx agentcapsule launch --runtime claude --with researcher --with reviewer
+npx github:Humanive/AgentCapsule launch --runtime claude --with researcher --with reviewer
 
 # everything after -- goes to the runtime unchanged
-npx agentcapsule launch researcher --runtime pi -- --model sonnet
+npx github:Humanive/AgentCapsule launch researcher --runtime pi -- --model sonnet
 ```
 
 Capsules are found in `--catalog DIR`, else `./capsules` in the current directory, else the examples bundled with this package.
@@ -40,6 +40,10 @@ Nothing is written into your project or global configuration. Session files live
 A subagent keeps its bare Capsule name on every runtime, so for that session it shadows any user or project agent with the same name.
 
 Codex is not supported yet: it has no session-only way to load skills from a directory. See `docs/adr/0002`.
+
+## For agents
+
+[`skills/agentcapsule/SKILL.md`](skills/agentcapsule/SKILL.md) teaches an agent to build capsules, convert existing agent definitions, and launch them. Install it like any Agent Skill.
 
 ## Validation
 

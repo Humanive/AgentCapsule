@@ -11,5 +11,5 @@ src/launch.ts (pure planning per Runtime); src/cli.ts injects process effects; s
 Fail fast on malformed packages, duplicate YAML keys, symlinks, and a Capsule used twice.
 Never silently skip invalid inputs. Keep original skill assets and executable modes.
 Work test-first at the three seams: loadCapsule, planLaunch, and the CLI `run` with a fake spawn.
-Update this file, CONTEXT.md, and README when these boundaries change. Branch before large changes.
+Update this file, CONTEXT.md, README, and skills/agentcapsule/SKILL.md when the format or commands change. Branch before large changes.
 Run `pnpm test`, `pnpm typecheck`, `pnpm build` and a CLI smoke check before committing.
