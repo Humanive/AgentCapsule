@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { run, type SpawnRuntime } from "../src/cli.js";
+import { run, type SpawnRuntime } from "./cli.js";
 import { capsuleFiles, capsuleMd, tree } from "./fixtures.js";
 
 interface Spawned {

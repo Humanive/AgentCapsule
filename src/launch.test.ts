@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CapsuleError, type Capsule } from "../src/capsule.js";
-import { planLaunch } from "../src/launch.js";
+import { CapsuleError, type Capsule } from "./capsule.js";
+import { planLaunch } from "./launch.js";
 
 function capsule(name: string, skills: string[] = []): Capsule {
   return {

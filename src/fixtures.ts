@@ -1,3 +1,4 @@
+/** Test-only helpers for building temporary capsule catalogs; excluded from the published build. */
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";

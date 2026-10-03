@@ -1,7 +1,7 @@
 import { symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CapsuleError, loadCapsule } from "../src/capsule.js";
+import { CapsuleError, loadCapsule } from "./capsule.js";
 import { capsuleFiles, capsuleMd, skillMd, tree } from "./fixtures.js";
 
 describe("loadCapsule", () => {
