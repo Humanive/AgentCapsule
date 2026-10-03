@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentcapsule"
+version = "0.1.0"
+description = "Portable agent packages: Role + bundled Skills"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0,<7"]
+
+[project.scripts]
+agentcapsule = "agentcapsule.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
