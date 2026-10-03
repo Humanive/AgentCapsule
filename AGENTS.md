@@ -1,6 +1,6 @@
 # AgentCapsule development
 
-Canonical package = capsules/<name>/agent.yaml + ROLE.md + optional skills/*/SKILL.md.
+Canonical package = capsules/<name>/CAPSULE.md (name + description, body = Role) + optional skills/*/SKILL.md.
 Vocabulary lives in CONTEXT.md; decisions in docs/adr/. Read both before changing behavior.
 A Capsule reaches a Runtime only by session-scoped injection (`launch`): the Role is appended
 to the Runtime's default prompt, Skills and subagent definitions are temporary session inputs.

@@ -27,6 +27,10 @@ _Avoid_: Platform, target (when meaning the host itself)
 The position a Capsule occupies in a session: **main** (the session's primary agent) or **subagent** (delegated to by another agent). Topology is chosen per session and is not part of a Capsule's identity.
 _Avoid_: Agent type, lifecycle
 
+**Team**:
+A named, reusable composition of an optional main Capsule and its subagent Capsules for one Launch. Not yet built.
+_Avoid_: Profile, squad, crew
+
 **Launch**:
 Starting a Runtime session with at most one main Capsule (otherwise the Runtime's own default agent is main) and any number of subagent Capsules injected for that session only, leaving no files in the project.
 _Avoid_: Deploy, install (installing means writing a Capsule into a project, which is an explicit opt-in)

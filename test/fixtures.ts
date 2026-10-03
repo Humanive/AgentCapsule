@@ -16,11 +16,14 @@ export function skillMd(name: string, description = `Use ${name}.`, body = `Do $
   return `---\nname: ${name}\ndescription: ${description}\n---\n${body}\n`;
 }
 
+export function capsuleMd(name: string, frontmatter = `name: ${name}\ndescription: The ${name} capsule.`, role = `# ${name}\nYou are the ${name}.\n`): string {
+  return `---\n${frontmatter}\n---\n${role}`;
+}
+
 /** A catalog containing one valid capsule with the given skills. */
 export function capsuleFiles(name: string, skills: string[] = ["web-research"]): Record<string, string> {
   const files: Record<string, string> = {
-    [`capsules/${name}/agent.yaml`]: `name: ${name}\ndescription: The ${name} capsule.\n`,
-    [`capsules/${name}/ROLE.md`]: `# ${name}\nYou are the ${name}.\n`,
+    [`capsules/${name}/CAPSULE.md`]: capsuleMd(name),
   };
   for (const skill of skills) files[`capsules/${name}/skills/${skill}/SKILL.md`] = skillMd(skill);
   return files;

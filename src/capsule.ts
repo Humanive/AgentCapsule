@@ -33,9 +33,16 @@ function parseMapping(source: string, label: string): Record<string, unknown> {
   return data as Record<string, unknown>;
 }
 
-/** Parses YAML that must be a mapping with exactly the given keys; duplicate keys are rejected. */
-function strictMapping(source: string, label: string, keys: string[]): Record<string, unknown> {
-  const data = parseMapping(source, label);
+/** Splits a Markdown file into its YAML frontmatter mapping and body. */
+function frontmatter(path: string): { meta: Record<string, unknown>; body: string } {
+  const lines = readText(path).split("\n");
+  const end = lines.indexOf("---", 1);
+  if (lines[0] !== "---" || end === -1) throw new CapsuleError(`${path}: missing frontmatter`);
+  return { meta: parseMapping(lines.slice(1, end).join("\n"), path), body: lines.slice(end + 1).join("\n") };
+}
+
+/** Rejects any key outside the given set, so a Capsule's identity cannot quietly grow runtime settings. */
+function exactKeys(data: Record<string, unknown>, label: string, keys: string[]): Record<string, unknown> {
   const actual = Object.keys(data).sort();
   if (actual.join() !== [...keys].sort().join()) {
     throw new CapsuleError(`${label}: expected exactly the fields ${keys.join(", ")}, got ${actual.join(", ")}`);
@@ -73,25 +80,23 @@ function assertPlainTree(dir: string): void {
 
 function loadSkill(dir: string): Skill {
   const path = join(dir, "SKILL.md");
-  const lines = readText(path).split("\n");
-  const end = lines.indexOf("---", 1);
-  if (lines[0] !== "---" || end === -1) throw new CapsuleError(`${path}: missing frontmatter`);
-  const meta = parseMapping(lines.slice(1, end).join("\n"), path);
+  const { meta, body } = frontmatter(path);
   const name = portableName(meta.name, `${path} name`);
   if (name !== basename(dir)) throw new CapsuleError(`${path}: name ${name} must match its folder`);
   if (text(meta.description, `${path} description`).length > 1024) {
     throw new CapsuleError(`${path}: description exceeds 1024 characters`);
   }
-  text(lines.slice(end + 1).join("\n"), `${path} body`);
+  text(body, `${path} body`);
   return { name, dir };
 }
 
 export function loadCapsule(catalog: string, name: string): Capsule {
   const dir = join(catalog, "capsules", portableName(name, "capsule"));
   if (!existsSync(dir)) throw new CapsuleError(`Unknown capsule ${name} in ${catalog}`);
-  const label = join(dir, "agent.yaml");
+  const label = join(dir, "CAPSULE.md");
   assertPlainTree(dir);
-  const meta = strictMapping(readText(label), label, ["name", "description"]);
+  const { meta, body } = frontmatter(label);
+  exactKeys(meta, label, ["name", "description"]);
   if (meta.name !== name) throw new CapsuleError(`${label}: name ${String(meta.name)} must match its folder ${name}`);
   const skillsDir = join(dir, "skills");
   const skills = (existsSync(skillsDir) ? readdirSync(skillsDir) : [])
@@ -101,7 +106,7 @@ export function loadCapsule(catalog: string, name: string): Capsule {
     name,
     description: text(meta.description, `${label} description`),
     dir,
-    role: text(readText(join(dir, "ROLE.md")), join(dir, "ROLE.md")),
+    role: text(body, `${label} role`),
     skills,
   };
 }

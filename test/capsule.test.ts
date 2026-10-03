@@ -2,7 +2,7 @@ import { symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CapsuleError, loadCapsule } from "../src/capsule.js";
-import { capsuleFiles, skillMd, tree } from "./fixtures.js";
+import { capsuleFiles, capsuleMd, skillMd, tree } from "./fixtures.js";
 
 describe("loadCapsule", () => {
   it("loads the role, description and bundled skills of a capsule", () => {
@@ -29,19 +29,29 @@ it("loads a role-only capsule that has no skills folder", () => {
   expect(loadCapsule(catalog, "reviewer").skills).toEqual([]);
 });
 
-describe("loadCapsule rejects malformed agent.yaml", () => {
+describe("loadCapsule rejects a malformed CAPSULE.md", () => {
   it.each([
-    ["a missing description", "name: researcher\n"],
-    ["an unknown field", "name: researcher\ndescription: Researches.\nmodel: opus\n"],
-    ["a duplicate key", "name: researcher\nname: researcher\ndescription: Researches.\n"],
-    ["a non-text description", "name: researcher\ndescription: [a, b]\n"],
-    ["a blank description", "name: researcher\ndescription: '  '\n"],
-    ["a name that differs from its folder", "name: other\ndescription: Researches.\n"],
-    ["a non-mapping document", "- name\n- description\n"],
-  ])("with %s", (_, yaml) => {
-    const catalog = tree({ ...capsuleFiles("researcher"), "capsules/researcher/agent.yaml": yaml });
+    ["a missing description", capsuleMd("researcher", "name: researcher")],
+    ["an unknown field", capsuleMd("researcher", "name: researcher\ndescription: Researches.\nmodel: opus")],
+    ["a duplicate key", capsuleMd("researcher", "name: researcher\nname: researcher\ndescription: Researches.")],
+    ["a non-text description", capsuleMd("researcher", "name: researcher\ndescription: [a, b]")],
+    ["a blank description", capsuleMd("researcher", "name: researcher\ndescription: '  '")],
+    ["a name that differs from its folder", capsuleMd("researcher", "name: other\ndescription: Researches.")],
+    ["a non-mapping frontmatter", capsuleMd("researcher", "- name\n- description")],
+    ["no frontmatter", "# researcher\nYou are the researcher.\n"],
+    ["unterminated frontmatter", "---\nname: researcher\ndescription: Researches.\n"],
+    ["a blank role", capsuleMd("researcher", undefined, " \n")],
+  ])("with %s", (_, content) => {
+    const catalog = tree({ ...capsuleFiles("researcher"), "capsules/researcher/CAPSULE.md": content });
 
     expect(() => loadCapsule(catalog, "researcher")).toThrow(CapsuleError);
+  });
+
+  it("when CAPSULE.md is missing", () => {
+    const files = capsuleFiles("researcher");
+    delete files["capsules/researcher/CAPSULE.md"];
+
+    expect(() => loadCapsule(tree(files), "researcher")).toThrow(CapsuleError);
   });
 });
 
@@ -54,19 +64,6 @@ describe("loadCapsule rejects a malformed capsule layout", () => {
     const catalog = tree({ ...capsuleFiles("researcher"), ...files });
 
     expect(() => loadCapsule(catalog, name)).toThrow(CapsuleError);
-  });
-
-  it("when ROLE.md is missing", () => {
-    const files = capsuleFiles("researcher");
-    delete files["capsules/researcher/ROLE.md"];
-
-    expect(() => loadCapsule(tree(files), "researcher")).toThrow(CapsuleError);
-  });
-
-  it("when ROLE.md is blank", () => {
-    const catalog = tree({ ...capsuleFiles("researcher"), "capsules/researcher/ROLE.md": " \n" });
-
-    expect(() => loadCapsule(catalog, "researcher")).toThrow(CapsuleError);
   });
 
 });

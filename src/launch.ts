@@ -23,8 +23,13 @@ export interface LaunchPlan {
   files: PlannedFile[];
 }
 
-/** A session-only Claude Code plugin named after the capsule, so its skills are namespaced `capsule:skill`. */
-function claudePlugin(capsule: Capsule, sessionDir: string, asSubagent: boolean): { dir: string; files: PlannedFile[] } {
+/** The main Capsule's Role as a session file, since runtimes append prompts from files. */
+function mainRole(main: Capsule, sessionDir: string): PlannedFile & { content: string } {
+  return { path: join(sessionDir, "main-role.md"), content: main.role };
+}
+
+/** A session-only Claude Code plugin carrying a Capsule's skills, namespaced `capsule:skill`. */
+function claudeSkillsPlugin(capsule: Capsule, sessionDir: string): { dir: string; files: PlannedFile[] } {
   const dir = join(sessionDir, "claude", capsule.name);
   const files: PlannedFile[] = [
     {
@@ -33,26 +38,33 @@ function claudePlugin(capsule: Capsule, sessionDir: string, asSubagent: boolean)
     },
   ];
   for (const skill of capsule.skills) files.push({ path: join(dir, "skills", skill.name), copyFrom: skill.dir });
-  if (asSubagent) {
-    const meta: Record<string, unknown> = { name: capsule.name, description: capsule.description };
-    if (capsule.skills.length > 0) meta.skills = capsule.skills.map((skill) => `${capsule.name}:${skill.name}`);
-    files.push({ path: join(dir, "agents", `${capsule.name}.md`), content: `---\n${stringify(meta)}---\n${capsule.role}` });
-  }
   return { dir, files };
+}
+
+/** Subagents go through `--agents` rather than plugin agents so they keep their bare Capsule names. */
+function claudeAgents(subagents: Capsule[]): string {
+  const agents: Record<string, { description: string; prompt: string; skills?: string[] }> = {};
+  for (const capsule of subagents) {
+    agents[capsule.name] = { description: capsule.description, prompt: capsule.role };
+    if (capsule.skills.length > 0) agents[capsule.name]!.skills = capsule.skills.map((skill) => `${capsule.name}:${skill.name}`);
+  }
+  return JSON.stringify(agents);
 }
 
 function planClaude({ main, subagents, sessionDir }: LaunchRequest): Omit<LaunchPlan, "command"> {
   const args: string[] = [];
   const files: PlannedFile[] = [];
-  if (main) args.push("--append-system-prompt-file", join(main.dir, "ROLE.md"));
-  const plugins = [
-    ...(main && main.skills.length > 0 ? [claudePlugin(main, sessionDir, false)] : []),
-    ...subagents.map((capsule) => claudePlugin(capsule, sessionDir, true)),
-  ];
-  for (const plugin of plugins) {
+  if (main) {
+    const role = mainRole(main, sessionDir);
+    args.push("--append-system-prompt-file", role.path);
+    files.push(role);
+  }
+  for (const capsule of [...(main ? [main] : []), ...subagents].filter((c) => c.skills.length > 0)) {
+    const plugin = claudeSkillsPlugin(capsule, sessionDir);
     args.push("--plugin-dir", plugin.dir);
     files.push(...plugin.files);
   }
+  if (subagents.length > 0) args.push("--agents", claudeAgents(subagents));
   return { args, env: {}, files };
 }
 
@@ -76,17 +88,17 @@ function piAgent(capsule: Capsule): string {
 
 function planPi({ main, subagents, sessionDir }: LaunchRequest): Omit<LaunchPlan, "command"> {
   const args: string[] = [];
+  const files: PlannedFile[] = [];
   if (main) {
-    args.push("--append-system-prompt", join(main.dir, "ROLE.md"));
+    const role = mainRole(main, sessionDir);
+    args.push("--append-system-prompt", role.path);
+    files.push(role);
     for (const skill of main.skills) args.push("--skill", skill.dir);
   }
-  if (subagents.length === 0) return { args, env: {}, files: [] };
+  if (subagents.length === 0) return { args, env: {}, files };
   const agents = join(sessionDir, "pi", "agents");
-  return {
-    args,
-    env: { PI_SUBAGENT_EXTRA_AGENT_DIRS: agents },
-    files: subagents.map((capsule) => ({ path: join(agents, `${capsule.name}.md`), content: piAgent(capsule) })),
-  };
+  for (const capsule of subagents) files.push({ path: join(agents, `${capsule.name}.md`), content: piAgent(capsule) });
+  return { args, env: { PI_SUBAGENT_EXTRA_AGENT_DIRS: agents }, files };
 }
 
 export function planLaunch(request: LaunchRequest): LaunchPlan {

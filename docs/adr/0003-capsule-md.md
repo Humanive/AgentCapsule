@@ -1,0 +1,3 @@
+# One CAPSULE.md per Capsule, not AGENT.md
+
+A Capsule's identity and Role live in a single `CAPSULE.md`: frontmatter `name` and `description`, body is the Role. This mirrors `SKILL.md` and the Markdown agent files Claude, Cursor, and Pi already read, so adapters translate it almost verbatim. We rejected `AGENT.md` because it is one letter away from `AGENTS.md` and was itself an early name for project instruction files, which would blur the line between a Capsule and Project Instructions. We rejected frontmatter in `ROLE.md` because the Role is only the prompt text; name and description describe the whole Capsule.

@@ -2,7 +2,7 @@ import { chmodSync, existsSync, readdirSync, readFileSync, statSync } from "node
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { run, type SpawnRuntime } from "../src/cli.js";
-import { capsuleFiles, tree } from "./fixtures.js";
+import { capsuleFiles, capsuleMd, tree } from "./fixtures.js";
 
 interface Spawned {
   command: string;
@@ -86,12 +86,12 @@ describe("agentcapsule inspect", () => {
   });
 
   it("reports an invalid capsule on stderr and exits 1", async () => {
-    const catalog = tree({ ...capsuleFiles("researcher"), "capsules/researcher/agent.yaml": "name: researcher\n" });
+    const catalog = tree({ ...capsuleFiles("researcher"), "capsules/researcher/CAPSULE.md": capsuleMd("researcher", "name: researcher") });
 
     const result = await cli(["inspect", "researcher", "--catalog", catalog]);
 
     expect(result).toMatchObject({ code: 1, stdout: "" });
-    expect(result.stderr).toMatch(/^agentcapsule: .*agent\.yaml: expected exactly the fields name, description/);
+    expect(result.stderr).toMatch(/^agentcapsule: .*CAPSULE\.md: expected exactly the fields name, description/);
   });
 });
 
@@ -110,8 +110,8 @@ describe("agentcapsule launch", () => {
     const catalog = tree({ ...capsuleFiles("coder", []), ...capsuleFiles("researcher", ["web-research"]) });
     const project = tree({ "CLAUDE.md": "Project rules.\n", "src/index.ts": "export {};\n" });
     const before = snapshot(project);
+    let roleFile = "";
     let pluginDir = "";
-    let agentFileAtSpawn = "";
 
     const result = await cli(
       ["launch", "coder", "--runtime", "claude", "--with", "researcher", "--catalog", catalog, "--", "--model", "opus"],
@@ -119,8 +119,9 @@ describe("agentcapsule launch", () => {
         cwd: project,
         exitCode: 3,
         onSpawn: ({ args }) => {
-          pluginDir = args[args.indexOf("--plugin-dir") + 1] ?? "";
-          agentFileAtSpawn = readFileSync(join(pluginDir, "agents/researcher.md"), "utf8");
+          roleFile = args[1] ?? "";
+          pluginDir = args[3] ?? "";
+          expect(readFileSync(roleFile, "utf8")).toBe("# coder\nYou are the coder.\n");
           expect(existsSync(join(pluginDir, "skills/web-research/SKILL.md"))).toBe(true);
         },
       },
@@ -132,12 +133,14 @@ describe("agentcapsule launch", () => {
       command: "claude",
       cwd: project,
       args: [
-        "--append-system-prompt-file", join(catalog, "capsules/coder/ROLE.md"),
+        "--append-system-prompt-file", roleFile,
         "--plugin-dir", pluginDir,
+        "--agents",
+        '{"researcher":{"description":"The researcher capsule.","prompt":"# researcher\\nYou are the researcher.\\n","skills":["researcher:web-research"]}}',
         "--model", "opus",
       ],
     });
-    expect(agentFileAtSpawn).toContain("You are the researcher.");
+    expect(existsSync(roleFile)).toBe(false);
     expect(existsSync(pluginDir)).toBe(false);
     expect(snapshot(project)).toEqual(before);
   });

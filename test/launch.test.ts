@@ -25,11 +25,12 @@ describe("planLaunch for Claude Code", () => {
     expect(plan).toEqual({
       command: "claude",
       args: [
-        "--append-system-prompt-file", "/catalog/capsules/researcher/ROLE.md",
+        "--append-system-prompt-file", "/session/main-role.md",
         "--plugin-dir", "/session/claude/researcher",
       ],
       env: {},
       files: [
+        { path: "/session/main-role.md", content: "You are the researcher.\n" },
         {
           path: "/session/claude/researcher/.claude-plugin/plugin.json",
           content: '{\n  "name": "researcher",\n  "description": "The researcher capsule."\n}\n',
@@ -45,19 +46,24 @@ describe("planLaunch for Claude Code", () => {
   it("needs no plugin for a role-only main capsule", () => {
     const plan = planLaunch({ runtime: "claude", main: capsule("reviewer"), subagents: [], passthrough: [], sessionDir: "/session" });
 
-    expect(plan.args).toEqual(["--append-system-prompt-file", "/catalog/capsules/reviewer/ROLE.md"]);
-    expect(plan.files).toEqual([]);
+    expect(plan.args).toEqual(["--append-system-prompt-file", "/session/main-role.md"]);
+    expect(plan.files).toEqual([{ path: "/session/main-role.md", content: "You are the reviewer.\n" }]);
   });
 
-  it("defines each subagent capsule as a plugin agent that preloads its own namespaced skills", () => {
+  it("defines subagent capsules under their own names, preloading their namespaced plugin skills", () => {
     const plan = planLaunch({
       runtime: "claude",
-      subagents: [capsule("researcher", ["web-research"])],
+      subagents: [capsule("researcher", ["web-research"]), capsule("reviewer")],
       passthrough: [],
       sessionDir: "/session",
     });
 
-    expect(plan.args).toEqual(["--plugin-dir", "/session/claude/researcher"]);
+    expect(plan.args).toEqual([
+      "--plugin-dir", "/session/claude/researcher",
+      "--agents",
+      '{"researcher":{"description":"The researcher capsule.","prompt":"You are the researcher.\\n","skills":["researcher:web-research"]},'
+        + '"reviewer":{"description":"The reviewer capsule.","prompt":"You are the reviewer.\\n"}}',
+    ]);
     expect(plan.files).toEqual([
       {
         path: "/session/claude/researcher/.claude-plugin/plugin.json",
@@ -66,19 +72,6 @@ describe("planLaunch for Claude Code", () => {
       {
         path: "/session/claude/researcher/skills/web-research",
         copyFrom: "/catalog/capsules/researcher/skills/web-research",
-      },
-      {
-        path: "/session/claude/researcher/agents/researcher.md",
-        content: [
-          "---",
-          "name: researcher",
-          "description: The researcher capsule.",
-          "skills:",
-          "  - researcher:web-research",
-          "---",
-          "You are the researcher.",
-          "",
-        ].join("\n"),
       },
     ]);
   });
@@ -93,8 +86,8 @@ describe("planLaunch for Claude Code", () => {
     });
 
     expect(plan.args).toEqual([
-      "--append-system-prompt-file", "/catalog/capsules/reviewer/ROLE.md",
-      "--plugin-dir", "/session/claude/researcher",
+      "--append-system-prompt-file", "/session/main-role.md",
+      "--agents", '{"researcher":{"description":"The researcher capsule.","prompt":"You are the researcher.\\n"}}',
       "--model", "opus", "fix the build",
     ]);
   });
@@ -124,13 +117,13 @@ describe("planLaunch for Pi", () => {
     expect(plan).toEqual({
       command: "pi",
       args: [
-        "--append-system-prompt", "/catalog/capsules/researcher/ROLE.md",
+        "--append-system-prompt", "/session/main-role.md",
         "--skill", "/catalog/capsules/researcher/skills/source-verification",
         "--skill", "/catalog/capsules/researcher/skills/web-research",
         "--model", "sonnet",
       ],
       env: {},
-      files: [],
+      files: [{ path: "/session/main-role.md", content: "You are the researcher.\n" }],
     });
   });
 

@@ -6,9 +6,8 @@ A Capsule is a portable agent package: a **Role** (who the agent is and what it 
 
 ```text
 capsules/researcher/
-├── agent.yaml          # name + description, nothing else
-├── ROLE.md             # the Role prompt
-└── skills/<name>/SKILL.md
+├── CAPSULE.md          # frontmatter: name + description; body: the Role
+└── skills/<name>/SKILL.md   # optional
 ```
 
 ## Usage
@@ -35,14 +34,16 @@ Nothing is written into your project or global configuration. Session files live
 
 | Runtime | Main capsule | Subagent capsule | Skill visibility |
 |---|---|---|---|
-| Claude Code | Role via `--append-system-prompt-file`; skills via a session plugin (`--plugin-dir`) | Session plugin agent `<capsule>:<capsule>` preloading its skills | Whole session; namespaced `<capsule>:<skill>` |
+| Claude Code | Role via `--append-system-prompt-file`; skills via a session plugin (`--plugin-dir`) | `--agents` under its bare name, preloading its plugin skills | Whole session; namespaced `<capsule>:<skill>` |
 | Pi | Role via `--append-system-prompt`; skills via `--skill` | pi-subagents agent via `PI_SUBAGENT_EXTRA_AGENT_DIRS` (requires the `pi-subagents` package) | Main: whole session. Subagent: only its own skills |
+
+A subagent keeps its bare Capsule name on every runtime, so for that session it shadows any user or project agent with the same name.
 
 Codex is not supported yet: it has no session-only way to load skills from a directory. See `docs/adr/0002`.
 
 ## Validation
 
-Loading fails fast on: an `agent.yaml` with fields other than `name` and `description`, duplicate YAML keys, non-portable names, a skill whose `name` differs from its folder, an empty Role or skill body, a skill description over 1024 characters, and symlinks or special files. A Capsule may appear only once per launch.
+Loading fails fast on: `CAPSULE.md` frontmatter with fields other than `name` and `description`, duplicate YAML keys, non-portable names, a skill whose `name` differs from its folder, an empty Role (the `CAPSULE.md` body) or skill body, a skill description over 1024 characters, and symlinks or special files. A Capsule may appear only once per launch.
 
 ## Development
 
